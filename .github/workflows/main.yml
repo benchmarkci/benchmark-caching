@@ -1,0 +1,113 @@
+name: caching
+
+on: [push]
+
+jobs:
+  cache_archive_linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: set up cache
+        id: cache-setup
+        uses: actions/cache@v4
+        with:
+          path: package
+          key: package-${{ runner.os }}-${{ env.GITHUB_SHA }}
+
+      - name: download and extract package
+        if: steps.cache-setup.outputs.cache-hit != 'true'
+        run: |
+          wget -O package.tar.gz https://github.com/NixOS/nixpkgs/archive/refs/tags/23.11.tar.gz
+          mkdir package
+          tar xf package.tar.gz -C package
+
+  cache_extract_linux:
+    needs: cache_archive_linux
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: extract
+        uses: actions/cache@v4
+        with:
+          path: package
+          key: package-${{ runner.os }}-${{ env.GITHUB_SHA }}
+
+      - name: check exists
+        run: test -d package
+
+  cache_archive_windows:
+    runs-on: windows-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: set up cache
+        id: cache-setup
+        uses: actions/cache@v4
+        with:
+          path: package
+          key: package-${{ runner.os }}-${{ env.GITHUB_SHA }}
+
+      - name: download and extract package
+        if: steps.cache-setup.outputs.cache-hit != 'true'
+        run: |
+          $ProgressPreference = 'SilentlyContinue'
+          Invoke-WebRequest 'https://github.com/NixOS/nixpkgs/archive/refs/tags/23.11.tar.gz' -OutFile package.tar.gz
+          mkdir package
+          tar xf package.tar.gz -C package
+
+  cache_extract_windows:
+    needs: cache_archive_windows
+    runs-on: windows-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: extract
+        uses: actions/cache@v4
+        with:
+          path: package
+          key: package-${{ runner.os }}-${{ env.GITHUB_SHA }}
+
+      - name: check exists
+        run: test -d package
+
+  cache_archive_macos:
+    runs-on: macos-14
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: set up cache
+        id: cache-setup
+        uses: actions/cache@v4
+        with:
+          path: package
+          key: package-${{ runner.os }}-${{ env.GITHUB_SHA }}
+
+      - name: download and extract package
+        if: steps.cache-setup.outputs.cache-hit != 'true'
+        run: |
+          wget -O package.tar.gz https://github.com/NixOS/nixpkgs/archive/refs/tags/23.11.tar.gz
+          mkdir package
+          tar xf package.tar.gz -C package
+
+  cache_extract_macos:
+    needs: cache_archive_macos
+    runs-on: macos-14
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: extract
+        uses: actions/cache@v4
+        with:
+          path: package
+          key: package-${{ runner.os }}-${{ env.GITHUB_SHA }}
+
+      - name: check exists
+        run: test -d package

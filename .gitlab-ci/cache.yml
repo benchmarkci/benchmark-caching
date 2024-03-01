@@ -1,0 +1,88 @@
+stages:
+  - cache_test
+
+.cache_archive:
+  stage: cache_test
+  script:
+    - wget -O package.tar.gz https://github.com/NixOS/nixpkgs/archive/refs/tags/23.11.tar.gz
+    - mkdir package
+    - tar xf package.tar.gz -C package
+  cache:
+    policy: push
+    key: package-${runner_tag}-${CI_COMMIT_SHA}
+    paths:
+      - package
+
+.cache_extract:
+  stage: cache_test
+  script:
+    - test -d package
+  cache:
+    policy: pull
+    key: package-${runner_tag}-${CI_COMMIT_SHA}
+    paths:
+      - package
+
+cache_archive_linux:
+  parallel:
+    matrix:
+      - runner_tag:
+        - saas-linux-small-amd64
+        - saas-linux-medium-amd64
+  tags: [ "${runner_tag}" ]
+  image: busybox:latest
+  extends: .cache_archive
+
+cache_extract_linux:
+  parallel:
+    matrix:
+      - runner_tag:
+        - saas-linux-small-amd64
+        - saas-linux-medium-amd64
+  needs:
+    - cache_archive_linux
+  tags: [ "${runner_tag}" ]
+  image: busybox:latest
+  extends: .cache_extract
+
+cache_archive_macos:
+  parallel:
+    matrix:
+      - runner_tag:
+        - saas-macos-medium-m1
+  tags: [ "${runner_tag}" ]
+  image: macos-14-xcode-15
+  extends: .cache_archive
+
+cache_extract_macos:
+  parallel:
+    matrix:
+      - runner_tag:
+        - saas-macos-medium-m1
+  needs:
+    - cache_archive_macos
+  tags: [ "${runner_tag}" ]
+  image: macos-14-xcode-15
+  extends: .cache_extract
+
+cache_archive_windows:
+  parallel:
+    matrix:
+      - runner_tag:
+        - saas-windows-medium-amd64
+  tags: [ "${runner_tag}" ]
+  image: busybox:latest
+  extends: .cache_archive
+
+cache_extract_windows:
+  parallel:
+    matrix:
+      - runner_tag:
+        - saas-windows-medium-amd64
+  needs:
+    - cache_archive_windows
+  tags: [ "${runner_tag}" ]
+  image: macos-14-xcode-15
+  extends: .cache_extract
+  script:
+    - Test-Path -Path package
